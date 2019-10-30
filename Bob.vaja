@@ -1,0 +1,44 @@
+fn new() -> {"routes": [], "middlewares": []}
+
+fn newPath(path)
+  "^" ++ path ++ "$" |> String.split("/") |> String.join("\/") |> Regex.fromString()
+end
+
+fn addMiddlewares(middlewares, app) -> HashMap.insert("middlewares", middlewares, app)
+fn addRoutes(routes, app) -> HashMap.insert("routes", routes, app)
+fn addRoute404(route, app) -> HashMap.insert("route404", route, app)
+
+fn makeHandler(app)
+  fn (req)
+    let expandedMiddlewares = Array.map(fn (x) -> x(), app.middlewares)
+
+    let updatedReq = \
+      expandedMiddlewares \
+      |> Array.map(Array.head) \
+      |> Array.reduce(fn(acc, curr) -> curr(acc), req)
+
+    let matchingRoutes = matchRoute(app.routes, req)
+    let matchingRoute = \
+      if (Array.len(matchingRoutes) > 0)
+        let match = matchingRoutes |> Array.head()
+        let [regex, handler] = match
+
+        [handler, Regex.find(regex, req.path)]
+      else
+        [app.route404, []]
+      end
+
+    let [route, routeArgs] = matchingRoute
+
+    expandedMiddlewares \
+    |> Array.map(Array.last) \
+    |> Array.reduce(
+      fn(acc, curr) -> curr(acc),
+      route(processedReq, routeArgs)
+    )
+  end
+end
+
+fn matchRoute(routes, req)
+  routes |> Array.filter(fn(route) -> Regex.contains(route[0], req.path))
+end
