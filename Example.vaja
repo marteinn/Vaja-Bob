@@ -13,7 +13,6 @@ let app = \
     ]
   ])
 
-print("Running Bob app...")
 Http.createServer() \
 |> Http.addHandler(
   app |> Bob.makeHandler()
