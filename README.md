@@ -7,33 +7,19 @@ A micro web framework for [Väja](https://github.com/marteinn/Vaja).
 ```
 import Bob
 
-fn debugMiddleware()
-  let processReq = fn(req)
-    print("-- Request --" ++ req.path)
-    print(req)
-    req
-  end
-  let processResp = fn (res)
-    print("-- Response --")
-    print(res)
-    res
-  end
-
-  [processReq, processResp]
-end
-
 let app = \
   Bob.new() \
-  |> Bob.addMiddlewares([debugMiddleware]) \
+  |> Bob.addMiddlewares([Bob.debugMiddleware, Bob.rendererMiddleware]) \
   |> Bob.addRoute404(fn(req, _) -> {"status": 404, "body": "Page not found"}) \
   |> Bob.addRoutes([
     [
       Bob.newPath("/artist/([a-z]*)/"),
-      fn(req, args) -> {"status": 200, "body": "Artist " ++ args[0]}
+      fn(req, args) -> Bob.newJSONResponse({"status": 200, "context": {
+        "artist": args[0]
+      }})
     ]
   ])
 
-print("Running Bob app...")
 Http.createServer() \
 |> Http.addHandler(
   app |> Bob.makeHandler()

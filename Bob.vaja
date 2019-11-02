@@ -1,14 +1,14 @@
 fn new() -> {"routes": [], "middlewares": []}
 
-fn newJSONResponse(context) -> HashMap.insert("render", JSON.toJSON, context)
+let newJSONResponse = HashMap.insert("render", JSON.toJSON)
 
 fn newPath(path)
   "^" ++ path ++ "$" |> String.split("/") |> String.join("\/") |> Regex.fromString()
 end
 
-fn addMiddlewares(middlewares, app) -> HashMap.insert("middlewares", middlewares, app)
-fn addRoutes(routes, app) -> HashMap.insert("routes", routes, app)
-fn addRoute404(route, app) -> HashMap.insert("route404", route, app)
+let addMiddlewares = HashMap.insert("middlewares")
+let addRoutes = HashMap.insert("routes")
+let addRoute404 = HashMap.insert("route404")
 
 fn makeHandler(app)
   fn (req)
@@ -34,7 +34,7 @@ fn makeHandler(app)
     |> Array.map(Array.last) \
     |> Array.reduce(
       fn(acc, curr) -> curr(acc),
-      route(processedReq, routeArgs)
+      route(updatedReq, routeArgs)
     )
   end
 end
