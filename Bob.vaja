@@ -20,17 +20,15 @@ fn makeHandler(app)
       |> Array.reduce(fn(acc, curr) -> curr(acc), req)
 
     let matchingRoutes = matchRoute(app.routes, req)
-    let matchingRoute = \
+    let [route, routeArgs] = \
       if (Array.len(matchingRoutes) > 0)
-        let match = matchingRoutes |> Array.head()
-        let [regex, handler] = match
+        let [regex, handler] = \
+          matchingRoutes |> Array.head()
 
         [handler, Regex.find(regex, req.path)]
       else
         [app.route404, []]
       end
-
-    let [route, routeArgs] = matchingRoute
 
     expandedMiddlewares \
     |> Array.map(Array.last) \
@@ -69,5 +67,5 @@ fn rendererMiddleware()
     end
   end
 
-  [fn(req) -> req, processResp]
+  [identity, processResp]
 end
