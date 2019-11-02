@@ -1,5 +1,7 @@
 fn new() -> {"routes": [], "middlewares": []}
 
+fn newJSONResponse(context) -> HashMap.insert("render", JSON.toJSON, context)
+
 fn newPath(path)
   "^" ++ path ++ "$" |> String.split("/") |> String.join("\/") |> Regex.fromString()
 end
@@ -41,4 +43,31 @@ end
 
 fn matchRoute(routes, req)
   routes |> Array.filter(fn(route) -> Regex.contains(route[0], req.path))
+end
+
+fn debugMiddleware()
+  let processReq = fn(req)
+    print("-- Request --" ++ req.path)
+    print(req)
+    req
+  end
+  let processResp = fn (res)
+    print("-- Response --")
+    print(res)
+    res
+  end
+
+  [processReq, processResp]
+end
+
+fn rendererMiddleware()
+  let processResp = fn (res)
+    if HashMap.hasKey("render", res)
+      res |> HashMap.insert("body", res.render(res.context))
+    else
+      res
+    end
+  end
+
+  [fn(req) -> req, processResp]
 end
