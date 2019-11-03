@@ -2,7 +2,11 @@ import Bob
 
 let app = \
   Bob.new() \
-  |> Bob.addMiddlewares([Bob.debugMiddleware, Bob.rendererMiddleware]) \
+  |> Bob.addMiddlewares([
+    Bob.enforceTrailingSlashMiddleware,
+    Bob.debugMiddleware,
+    Bob.rendererMiddleware
+  ]) \
   |> Bob.addRoute404(fn(req, _) -> {"status": 404, "body": "Page not found"}) \
   |> Bob.addRoutes([
     [
