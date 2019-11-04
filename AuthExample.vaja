@@ -1,0 +1,57 @@
+import Bob
+
+fn requireAuth(username, password)
+  fn (req)
+    if (verifyBasicAuth(username, password, req))
+      []
+    else
+      [{"status": 401, "body": "Denied"}]
+    end
+  end
+end
+
+fn verifyBasicAuth(username, password, req)
+  let authHeaders = Array.filter(fn(x) -> x[0] == "authorization", req.headers)
+  let [_, headerValue] = authHeaders |> Array.head()
+  let encodedValue = headerValue |> String.split(" ") |> Array.last()
+  let [reqUsername, reqPassword] = \
+    Base64.decode(encodedValue) \
+    |> String.split(":")
+  (username == reqUsername) and (password == reqPassword)
+end
+
+fn handlerDecorators(guards, handler)
+  fn (req, args)
+    let res = Array.reduce(fn(acc, curr) -> acc ++ curr(req), [], guards)
+    if (Array.len(res) == 0)
+      handler(req, args)
+    else
+      res |> Array.head()
+    end
+  end
+end
+
+let app = \
+  Bob.new() \
+  |> Bob.addMiddlewares([
+    Bob.enforceTrailingSlashMiddleware,
+    Bob.debugMiddleware,
+    Bob.rendererMiddleware
+  ]) \
+  |> Bob.addRoute404(fn(req, _) -> {"status": 404, "body": "Page not found"}) \
+  |> Bob.addRoutes([
+    [
+      Bob.newPath("/artist/([a-z]*)/"),
+      fn(req, args)
+        Bob.newJSONResponse({"status": 200, "context": {
+          "artist": args[0]
+        }})
+      end |> handlerDecorators([requireAuth("admin", "password")])
+    ]
+  ])
+
+Http.createServer() \
+|> Http.addHandler(
+  app |> Bob.makeHandler()
+) \
+|> Http.listen(8080)
