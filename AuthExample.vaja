@@ -1,17 +1,21 @@
 import Bob
 
 fn requireAuth(username, password)
-  fn (req)
-    if (verifyBasicAuth(username, password, req))
+  fn (conn)
+    if (verifyBasicAuth(username, password, conn))
       []
     else
-      [{"status": 401, "body": "Denied"}]
+      [{"respStatus": 401, "respBody": "Denied"}]
     end
   end
 end
 
-fn verifyBasicAuth(username, password, req)
-  let authHeaders = Array.filter(fn(x) -> x[0] == "authorization", req.headers)
+fn verifyBasicAuth(username, password, conn)
+  let authHeaders = Array.filter(fn(x) -> x[0] == "authorization", conn.headers)
+  if (Array.len(authHeaders) == 0)
+    return false
+  end
+
   let [_, headerValue] = authHeaders |> Array.head()
   let encodedValue = headerValue |> String.split(" ") |> Array.last()
   let [reqUsername, reqPassword] = \
@@ -21,10 +25,10 @@ fn verifyBasicAuth(username, password, req)
 end
 
 fn handlerDecorators(guards, handler)
-  fn (req, args)
-    let res = Array.reduce(fn(acc, curr) -> acc ++ curr(req), [], guards)
+  fn (conn, args)
+    let res = Array.reduce(fn(acc, curr) -> acc ++ curr(conn), [], guards)
     if (Array.len(res) == 0)
-      handler(req, args)
+      handler(conn, args)
     else
       res |> Array.head()
     end
@@ -38,15 +42,23 @@ let app = \
     Bob.debugMiddleware,
     Bob.rendererMiddleware
   ]) \
-  |> Bob.addRoute404(fn(req, _) -> {"status": 404, "body": "Page not found"}) \
+  |> Bob.addRoute404(fn(conn, _) -> {"respStatus": 404, "respBody": "Page not found"}) \
   |> Bob.addRoutes([
     [
       Bob.newPath("/artist/([a-z]*)/"),
-      fn(req, args)
-        Bob.newJSONResponse({"status": 200, "context": {
+      fn(conn, args)
+        Bob.newJSONResponse({"respStatus": 200, "context": {
           "artist": args[0]
         }})
       end |> handlerDecorators([requireAuth("admin", "password")])
+    ],
+    [
+      Bob.newPath("/albums/([a-z]*)/"),
+      fn(conn, args)
+        Bob.newJSONResponse({"respStatus": 200, "context": {
+          "album": args[0]
+        }})
+      end
     ]
   ])
 

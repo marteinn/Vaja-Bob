@@ -10,11 +10,11 @@ import Bob
 let app = \
   Bob.new() \
   |> Bob.addMiddlewares([Bob.debugMiddleware, Bob.rendererMiddleware]) \
-  |> Bob.addRoute404(fn(req, _) -> {"status": 404, "body": "Page not found"}) \
+  |> Bob.addRoute404(fn(conn, _) -> {"status": 404, "body": "Page not found"}) \
   |> Bob.addRoutes([
     [
       Bob.newPath("/artist/([a-z]*)/"),
-      fn(req, args) -> Bob.newJSONResponse({"status": 200, "context": {
+      fn(_conn, args) -> Bob.newJSONResponse({"status": 200, "context": {
         "artist": args[0]
       }})
     ]
