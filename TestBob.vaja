@@ -41,5 +41,29 @@ suite("Bob test suite", [
       |> Http.call("https://example.com/about-us/", "get", "", [])
 
     return conn.response.status == 200
+  end),
+  test("Make sure json middleware works", fn (state)
+    let app = \
+      state.app \
+      |> Bob.addMiddlewares([
+        Bob.rendererMiddleware
+      ]) \
+      |> Bob.addRoutes([
+        [
+          Bob.newPath("/city/"),
+          fn(conn, args)
+            Bob.newJSONResponse({"respStatus": 200, "context": {
+              "city": "stockholm"
+            }})
+          end
+        ]
+      ])
+
+    let conn = \
+      state.server \
+      |> Http.addHandler(app |> Bob.makeHandler()) \
+      |> Http.call("https://example.com/city/", "get", "", [])
+
+    return conn.response.body == "{\"city\":\"stockholm\"}"
   end)
 ])
